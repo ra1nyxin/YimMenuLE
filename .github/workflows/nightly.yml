@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - master
+      - main
   schedule:
     # cronjob that triggers every day at 2PM UTC
     - cron: '0 14 * * *'
