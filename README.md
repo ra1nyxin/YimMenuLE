@@ -7,9 +7,3 @@ A mod menu for Grand Theft Auto V Legacy
 3. Download an injector, such as [Xenos](https://www.unknowncheats.me/forum/general-programming-and-reversing/124013-xenos-injector-v2-3-2-a.html)
 4. Open Rockstar Launcher, select Grand Theft Auto V Legacy, go to settings, and disable BattlEye. If you are using Steam or Epic Games, you may have to pass the -nobattleye command line parameter as well
 5. Launch GTA V, then use your injector to inject YimMenu.dll at the main menu
-
----
-
-# Message to Rockstar Security Team:
-
-## You haven't seen the last of us
