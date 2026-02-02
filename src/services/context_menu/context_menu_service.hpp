@@ -62,7 +62,7 @@ namespace big
 		s_context_menu vehicle_menu{ContextEntityType::VEHICLE,
 		    0,
 		    {},
-		    {{"KILL ENGINE",
+		    {{"摧毁引擎",
 		         [this] {
 			         if (entity::take_control_of(m_handle))
 			         {
@@ -72,7 +72,7 @@ namespace big
 			         else
 				         g_notification_service.push_warning("TOXIC"_T.data(), "VEHICLE_FAILED_CONTROL"_T.data());
 		         }},
-		        {"FIX VEHICLE",
+		        {"修复载具",
 		            [this] {
 			            if (entity::take_control_of(m_handle))
 			            {
@@ -84,7 +84,7 @@ namespace big
 			            else
 				            g_notification_service.push_warning("WARNING"_T.data(), "VEHICLE_FAILED_CONTROL"_T.data());
 		            }},
-		        {"BURST TIRES",
+		        {"爆胎",
 		            [this] {
 			            if (entity::take_control_of(m_handle))
 			            {
@@ -98,7 +98,7 @@ namespace big
 			            else
 				            g_notification_service.push_warning("TOXIC"_T.data(), "VEHICLE_FAILED_CONTROL"_T.data());
 		            }},
-		        {"HALT",
+		        {"强制停下",
 		            [this] {
 			            if (entity::take_control_of(m_handle))
 			            {
@@ -107,27 +107,27 @@ namespace big
 			            else
 				            g_notification_service.push_warning("TOXIC"_T.data(), "VEHICLE_FAILED_CONTROL"_T.data());
 		            }},
-		        {"COPY VEHICLE",
+		        {"复制载具",
 		            [this] {
 			            Vehicle v = persist_car_service::clone_ped_car(VEHICLE::GET_PED_IN_VEHICLE_SEAT(m_handle, -1, 0), m_handle);
 			            script::get_current()->yield();
 			            PED::SET_PED_INTO_VEHICLE(PLAYER::PLAYER_PED_ID(), v, -1);
 		            }},
-		        {"BOOST",
+		        {"极速冲刺",
 		            [this] {
 			            if (entity::take_control_of(m_handle))
 				            VEHICLE::SET_VEHICLE_FORWARD_SPEED(m_handle, 79);
 			            else
 				            g_notification_service.push_warning("TOXIC"_T.data(), "VEHICLE_FAILED_CONTROL"_T.data());
 		            }},
-		        {"LAUNCH",
+		        {"弹射起飞",
 		            [this] {
 			            if (entity::take_control_of(m_handle))
 				            ENTITY::APPLY_FORCE_TO_ENTITY(m_handle, 1, 0.f, 0.f, 50000.f, 0.f, 0.f, 0.f, 0, 0, 1, 1, 0, 1);
 			            else
 				            g_notification_service.push_warning("TOXIC"_T.data(), "VEHICLE_FAILED_CONTROL"_T.data());
 		            }},
-		        {"EJECT",
+		        {"踢出驾驶员",
 		            [this] {
 			            if (ped::get_player_from_ped(VEHICLE::GET_PED_IN_VEHICLE_SEAT(m_handle, -1, 0)) != NULL)
 			            {
@@ -138,27 +138,27 @@ namespace big
 			            TASK::CLEAR_PED_TASKS_IMMEDIATELY(VEHICLE::GET_PED_IN_VEHICLE_SEAT(m_handle, -1, 0));
 			            TASK::CLEAR_PED_TASKS_IMMEDIATELY(m_handle);
 		            }},
-		        {"TP INTO", [this] {
+		        {"坐进载具", [this] {
 			         teleport::into_vehicle(m_handle);
 		         }}}};
 
 		s_context_menu ped_menu{ContextEntityType::PED,
 		    0,
 		    {},
-		    {{"DISARM",
+		    {{"缴械",
 		         [this] {
 			         for (auto& [_, weapon] : g_gta_data_service.weapons())
 				         WEAPON::REMOVE_WEAPON_FROM_PED(m_handle, weapon.m_hash);
 		         }},
-		        {"KILL",
+		        {"杀死",
 		            [this] {
 			            ped::kill_ped(m_handle);
 		            }},
-		        {"RAGDOLL",
+		        {"布娃娃模式",
 		            [this] {
 			            PED::SET_PED_TO_RAGDOLL(m_handle, 2000, 2000, 0, 0, 0, 0);
 		            }},
-		        {"ANIMATION",
+		        {"播放动画",
 		            [this] {
 			            // TODO: maybe inform the user of this behavior
 			            if (STREAMING::DOES_ANIM_DICT_EXIST(g_ped_animation_service.current_animation.dict.data()))
@@ -166,7 +166,7 @@ namespace big
 			            else
 				            ped::ped_play_animation(m_handle, "mini@strip_club@private_dance@part1", "priv_dance_p1", 3.5f, -4.0f, -1, 1);
 		            }},
-		        {"RECRUIT", [this] {
+		        {"招募保镖", [this] {
 			         TASK::CLEAR_PED_TASKS(m_handle);
 			         PED::SET_PED_AS_GROUP_MEMBER(m_handle, PED::GET_PED_GROUP_INDEX(self::ped));
 			         PED::SET_PED_RELATIONSHIP_GROUP_HASH(m_handle, PED::GET_PED_RELATIONSHIP_GROUP_HASH(self::ped));
@@ -190,26 +190,26 @@ namespace big
 		s_context_menu player_menu{ContextEntityType::PLAYER,
 		    0,
 		    {},
-		    {{"SET SELECTED",
+		    {{"选中玩家",
 		         [this] {
 			         g_player_service->set_selected(ped::get_player_from_ped(m_handle));
 		         }},
-		        {"STEAL OUTFIT",
+		        {"偷取服装",
 		            [this] {
 			            ped::steal_outfit(m_handle);
 		            }},
-		        {"KICK",
+		        {"踢出战局",
 		            [this] {
 			            static player_command* command = player_command::get("smartkick"_J);
 			            command->call(ped::get_player_from_ped(m_handle), {});
 			            script::get_current()->yield(500ms);
 		            }},
-		        {"DISARM",
+		        {"缴械",
 		            [this] {
 			            static player_command* command = player_command::get("remweaps"_J);
 			            command->call(ped::get_player_from_ped(m_handle), {});
 		            }},
-		        {"RAGDOLL", [this] {
+		        {"布娃娃模式", [this] {
 			         static player_command* command = player_command::get("ragdoll"_J);
 			         command->call(ped::get_player_from_ped(m_handle), {});
 		         }}}};
@@ -217,27 +217,27 @@ namespace big
 		s_context_menu shared_menu{ContextEntityType::SHARED,
 		    0,
 		    {},
-		    {{"COPY HASH",
+		    {{"复制 HASH",
 		         [this] {
 			         ImGui::SetClipboardText(std::format("0x{:08X}", (rage::joaat_t)m_pointer->m_model_info->m_hash).c_str());
-			         g_notification_service.push("Context Menu",
-			             std::format("Copy hash 0x{:08X}", (rage::joaat_t)m_pointer->m_model_info->m_hash).c_str());
+			         g_notification_service.push("上下文菜单",
+			             std::format("已复制 Hash 0x{:08X}", (rage::joaat_t)m_pointer->m_model_info->m_hash).c_str());
 		         }},
-		        {"EXPLODE",
+		        {"爆炸",
 		            [this] {
 			            rage::fvector3 pos = *m_pointer->m_navigation->get_position();
 			            FIRE::ADD_EXPLOSION(pos.x, pos.y, pos.z, 1, 1000, 1, 0, 1, 0);
 		            }},
-		        {"TP TO",
+		        {"传送到此处",
 		            [this] {
 			            rage::fvector3 pos = *m_pointer->m_navigation->get_position();
 			            teleport::to_coords({pos.x, pos.y, pos.z});
 		            }},
-		        {"TP ON TOP",
+		        {"传送到其上方",
 		            [this] {
 			            teleport::tp_on_top(m_handle, true);
 		            }},
-		        {"BRING",
+		        {"拉到身边",
 		            [this] {
 			            rage::fvector3 pos = *g_local_player->m_navigation->get_position();
 
@@ -256,14 +256,14 @@ namespace big
 				            }
 			            }
 		            }},
-		        {"ENFLAME",
+		        {"点燃",
 		            [this] {
 			            Vector3 pos = ENTITY::GET_ENTITY_COORDS(m_handle, TRUE);
 			            FIRE::START_ENTITY_FIRE(m_handle);
 			            FIRE::START_SCRIPT_FIRE(pos.x, pos.y, pos.z, 25, TRUE);
 			            FIRE::ADD_EXPLOSION(pos.x, pos.y, pos.z, eExplosionTag::MOLOTOV, 1, false, false, 0, false);
 		            }},
-		        {"DELETE", [this] {
+		        {"删除", [this] {
 			         if (entity::take_control_of(m_handle))
 			         {
 				         entity::delete_entity(m_handle);
