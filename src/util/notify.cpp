@@ -83,6 +83,6 @@ namespace big::notify
 
 	void player_joined(CNetGamePlayer* net_game_player)
 	{
-		above_map(std::format("<C>{}</C> joined.", net_game_player->get_name()));
+		above_map(std::format("<C>{}</C> 进来了", net_game_player->get_name()));
 	}
 }
