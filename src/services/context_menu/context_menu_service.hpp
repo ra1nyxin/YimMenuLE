@@ -9,7 +9,6 @@
 #include "util/ped.hpp"
 #include "util/teleport.hpp"
 
-
 namespace big
 {
 	struct context_option
@@ -41,7 +40,6 @@ namespace big
 	public:
 		context_menu_service();
 		~context_menu_service();
-
 		context_menu_service(const context_menu_service&)                = delete;
 		context_menu_service(context_menu_service&&) noexcept            = delete;
 		context_menu_service& operator=(const context_menu_service&)     = delete;
@@ -126,6 +124,23 @@ namespace big
 				            ENTITY::APPLY_FORCE_TO_ENTITY(m_handle, 1, 0.f, 0.f, 50000.f, 0.f, 0.f, 0.f, 0, 0, 1, 1, 0, 1);
 			            else
 				            g_notification_service.push_warning("TOXIC"_T.data(), "VEHICLE_FAILED_CONTROL"_T.data());
+		            }},
+		        {"传到导航点",
+		            [this] {
+			            Blip waypoint = HUD::GET_FIRST_BLIP_INFO_ID(8);
+			            if (HUD::DOES_BLIP_EXIST(waypoint))
+			            {
+				            if (entity::take_control_of(m_handle))
+				            {
+					            Vector3 coords = HUD::GET_BLIP_INFO_ID_COORD(waypoint);
+					            ENTITY::SET_ENTITY_COORDS(m_handle, coords.x, coords.y, coords.z, false, false, false, false);
+					            VEHICLE::SET_VEHICLE_ON_GROUND_PROPERLY(m_handle, 5.f);
+				            }
+				            else
+					            g_notification_service.push_warning("TOXIC"_T.data(), "VEHICLE_FAILED_CONTROL"_T.data());
+			            }
+			            else
+				            g_notification_service.push_warning("WARNING"_T.data(), "未设置导航点");
 		            }},
 		        {"踢出驾驶员",
 		            [this] {
@@ -269,9 +284,7 @@ namespace big
 				         entity::delete_entity(m_handle);
 			         }
 		         }}}};
-
 		std::unordered_map<ContextEntityType, s_context_menu> options = {{ContextEntityType::VEHICLE, vehicle_menu}, {ContextEntityType::PLAYER, player_menu}, {ContextEntityType::PED, ped_menu}, {ContextEntityType::SHARED, shared_menu}, {ContextEntityType::OBJECT, object_menu}};
 	};
-
 	inline context_menu_service* g_context_menu_service{};
 }
