@@ -82,6 +82,28 @@ namespace big
 			            else
 				            g_notification_service.push_warning("WARNING"_T.data(), "VEHICLE_FAILED_CONTROL"_T.data());
 		            }},
+				{"设为无敌",
+				    [this] {
+				        if (entity::take_control_of(m_handle))
+				        {
+				            ENTITY::SET_ENTITY_INVINCIBLE(m_handle, true);
+				            ENTITY::SET_ENTITY_PROOFS(m_handle, true, true, true, true, true, true, true, true);
+				            g_notification_service.push("上下文菜单", "载具已设为无敌");
+				        }
+				        else
+				            g_notification_service.push_warning("WARNING"_T.data(), "VEHICLE_FAILED_CONTROL"_T.data());
+				    }},
+				{"倒立",
+				    [this] {
+				        if (entity::take_control_of(m_handle))
+				        {
+				            Vector3 rot = ENTITY::GET_ENTITY_ROTATION(m_handle, 2);
+				            ENTITY::SET_ENTITY_ROTATION(m_handle, rot.x, 180.0f, rot.z, 2, true);
+				            g_notification_service.push("上下文菜单", "载具已倒立");
+				        }
+				        else
+				            g_notification_service.push_warning("WARNING"_T.data(), "VEHICLE_FAILED_CONTROL"_T.data());
+				    }},
 		        {"爆胎",
 		            [this] {
 			            if (entity::take_control_of(m_handle))
