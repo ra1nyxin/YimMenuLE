@@ -128,7 +128,7 @@ namespace big
 		ImGui::BeginGroup();
 		components::small_text("FORCE_HOST"_T);
 		
-		ImGui::Checkbox("KICK_HOST_TO_STAY_IN_SESSION"_T.data(), &g.session.kick_host_to_stay_in_session);
+		ImGui::Checkbox("踢出主机以留在战局", &g.session.kick_host_to_stay_in_session);
 
 		ImGui::Checkbox("FORCE_SCRIPT_HOST"_T.data(), &g.session.force_script_host);
 		if (ImGui::IsItemHovered())
