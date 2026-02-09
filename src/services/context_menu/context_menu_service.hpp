@@ -88,18 +88,17 @@ namespace big
 				        {
 				            ENTITY::SET_ENTITY_INVINCIBLE(m_handle, true);
 				            ENTITY::SET_ENTITY_PROOFS(m_handle, true, true, true, true, true, true, true, true);
-				            g_notification_service.push("上下文菜单", "载具已设为无敌");
 				        }
 				        else
 				            g_notification_service.push_warning("WARNING"_T.data(), "VEHICLE_FAILED_CONTROL"_T.data());
 				    }},
-				{"倒立",
+				{"翻转载具",
 				    [this] {
 				        if (entity::take_control_of(m_handle))
 				        {
 				            Vector3 rot = ENTITY::GET_ENTITY_ROTATION(m_handle, 2);
-				            ENTITY::SET_ENTITY_ROTATION(m_handle, rot.x, 180.0f, rot.z, 2, true);
-				            g_notification_service.push("上下文菜单", "载具已倒立");
+				            float new_roll = (std::abs(rot.y) > 90.0f) ? 0.0f : 180.0f;				            
+				            ENTITY::SET_ENTITY_ROTATION(m_handle, rot.x, new_roll, rot.z, 2, true);
 				        }
 				        else
 				            g_notification_service.push_warning("WARNING"_T.data(), "VEHICLE_FAILED_CONTROL"_T.data());
@@ -109,7 +108,6 @@ namespace big
 			            if (entity::take_control_of(m_handle))
 			            {
 				            VEHICLE::SET_VEHICLE_TYRES_CAN_BURST(m_handle, true);
-
 				            for (int i = 0; i < 8; i++)
 				            {
 					            VEHICLE::SET_VEHICLE_TYRE_BURST(m_handle, i, true, 1000.0);
@@ -191,6 +189,10 @@ namespace big
 		            [this] {
 			            ped::kill_ped(m_handle);
 		            }},
+				{"克隆",
+					[this] {
+						PED::CLONE_PED(m_handle, TRUE, TRUE, TRUE);
+					}},
 		        {"布娃娃模式",
 		            [this] {
 			            PED::SET_PED_TO_RAGDOLL(m_handle, 2000, 2000, 0, 0, 0, 0);
@@ -231,6 +233,13 @@ namespace big
 		         [this] {
 			         g_player_service->set_selected(ped::get_player_from_ped(m_handle));
 		         }},
+				{"回血回甲",
+					[this] {
+						if (entity::take_control_of(m_handle)) {
+							ENTITY::SET_ENTITY_HEALTH(m_handle, ENTITY::GET_ENTITY_MAX_HEALTH(m_handle), 0, 0);
+							PED::ADD_ARMOUR_TO_PED(m_handle, 100);
+						}
+					}},
 		        {"偷取服装",
 		            [this] {
 			            ped::steal_outfit(m_handle);
