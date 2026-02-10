@@ -1,4 +1,4 @@
-<img width="1388" height="602" alt="image" src="https://github.com/user-attachments/assets/edc25190-4a26-4e1d-a1b8-d20d74395a0c" />
+<img width="1488" height="602" alt="image" src="https://github.com/user-attachments/assets/edc25190-4a26-4e1d-a1b8-d20d74395a0c" />
 
 ## 使用方法 | How to use
 
