@@ -31,10 +31,9 @@ namespace big
 		MISC::GET_MODEL_DIMENSIONS(hash, &min, &max);
 		const auto dimensions = (max - min) * 0.5f;
 
-		// sanity check
 		if (!m_pointer || !m_pointer->m_navigation)
 			return;
-		// make copy just in case
+		
 		const auto position = *m_pointer->m_navigation->get_position();
 
 		rage::fvector3 front_upper_right, back_lower_left;
@@ -48,7 +47,6 @@ namespace big
 
 		rage::fvector3 edge1 = back_lower_left;
 		rage::fvector3 edge2, edge3, edge4;
-
 		rage::fvector3 edge5 = front_upper_right;
 		rage::fvector3 edge6, edge7, edge8;
 
@@ -78,10 +76,7 @@ namespace big
 
 		auto any_fail                     = false;
 		static auto imgui_world_to_screen = [&any_fail](rage::fvector3& world_input, ImVec2& screen_result) {
-			if (any_fail)
-			{
-				return;
-			}
+			if (any_fail) return;
 
 			const auto success = GRAPHICS::GET_SCREEN_COORD_FROM_WORLD_COORD(world_input.x,
 			    world_input.y,
@@ -94,9 +89,7 @@ namespace big
 				screen_result.y = static_cast<float>(*g_pointers->m_gta.m_resolution_y) * screen_result.y;
 			}
 			else
-			{
 				any_fail = true;
-			}
 		};
 
 		auto& box = m_model_bounding_box_screen_space;
@@ -104,32 +97,19 @@ namespace big
 		imgui_world_to_screen(edge2, box.edge2);
 		imgui_world_to_screen(edge3, box.edge3);
 		imgui_world_to_screen(edge4, box.edge4);
-
 		imgui_world_to_screen(edge5, box.edge5);
 		imgui_world_to_screen(edge6, box.edge6);
 		imgui_world_to_screen(edge7, box.edge7);
 		imgui_world_to_screen(edge8, box.edge8);
 
-		if (any_fail)
-		{
-			box = {};
-		}
+		if (any_fail) box = {};
 	}
 
 	double context_menu_service::distance_to_middle_of_screen(const rage::fvector2& screen_pos)
 	{
 		double cum_dist{};
-
-		if (screen_pos.x > 0.5)
-			cum_dist += screen_pos.x - 0.5;
-		else
-			cum_dist += 0.5 - screen_pos.x;
-
-		if (screen_pos.y > 0.5)
-			cum_dist += screen_pos.y - 0.5;
-		else
-			cum_dist += 0.5 - screen_pos.y;
-
+		cum_dist += std::abs(screen_pos.x - 0.5);
+		cum_dist += std::abs(screen_pos.y - 0.5);
 		return cum_dist;
 	}
 
@@ -141,10 +121,7 @@ namespace big
 			{
 			case eModelType::Object:
 			{
-				if (!misc::has_bits_set(&g.context_menu.allowed_entity_types, static_cast<uint8_t>(ContextEntityType::OBJECT)))
-				{
-					break;
-				}
+				if (!misc::has_bits_set(&g.context_menu.allowed_entity_types, static_cast<uint8_t>(ContextEntityType::OBJECT))) break;
 				return &options.at(ContextEntityType::OBJECT);
 			}
 			case eModelType::Ped:
@@ -153,39 +130,22 @@ namespace big
 				{
 					if (ped->m_ped_task_flag & static_cast<uint8_t>(ePedTask::TASK_DRIVING) && ped->m_vehicle)
 					{
-						if (!misc::has_bits_set(&g.context_menu.allowed_entity_types, static_cast<uint8_t>(ContextEntityType::VEHICLE)))
-						{
-							break;
-						}
-
+						if (!misc::has_bits_set(&g.context_menu.allowed_entity_types, static_cast<uint8_t>(ContextEntityType::VEHICLE))) break;
 						m_pointer = ped->m_vehicle;
 						return &options.at(ContextEntityType::VEHICLE);
 					}
 					if (ped->m_player_info)
 					{
-						if (!misc::has_bits_set(&g.context_menu.allowed_entity_types, static_cast<uint8_t>(ContextEntityType::PLAYER)))
-						{
-							break;
-						}
-
+						if (!misc::has_bits_set(&g.context_menu.allowed_entity_types, static_cast<uint8_t>(ContextEntityType::PLAYER))) break;
 						return &options.at(ContextEntityType::PLAYER);
 					}
 				}
-
-				if (!misc::has_bits_set(&g.context_menu.allowed_entity_types, static_cast<uint8_t>(ContextEntityType::PED)))
-				{
-					break;
-				}
-
+				if (!misc::has_bits_set(&g.context_menu.allowed_entity_types, static_cast<uint8_t>(ContextEntityType::PED))) break;
 				return &options.at(ContextEntityType::PED);
 			}
 			case eModelType::Vehicle:
 			{
-				if (!misc::has_bits_set(&g.context_menu.allowed_entity_types, static_cast<uint8_t>(ContextEntityType::VEHICLE)))
-				{
-					break;
-				}
-
+				if (!misc::has_bits_set(&g.context_menu.allowed_entity_types, static_cast<uint8_t>(ContextEntityType::VEHICLE))) break;
 				return &options.at(ContextEntityType::VEHICLE);
 			}
 			default: break;
@@ -207,17 +167,28 @@ namespace big
 		{
 			if (type == ContextEntityType::SHARED)
 				continue;
-			menu.options.insert(menu.options.end(),
-			    options.at(ContextEntityType::SHARED).options.begin(),
-			    options.at(ContextEntityType::SHARED).options.end());
+
+			// Avoid duplicate insertions if load_shared is called multiple times
+			for (const auto& shared_opt : options.at(ContextEntityType::SHARED).options)
+			{
+				bool exists = false;
+				for (const auto& existing_opt : menu.options)
+				{
+					if (existing_opt.name == shared_opt.name)
+					{
+						exists = true;
+						break;
+					}
+				}
+				if (!exists)
+					menu.options.push_back(shared_opt);
+			}
 
 			uint32_t max_size = 0;
 			for (auto& [name, _] : menu.options)
-			{
-				max_size = static_cast<int>(max_size < name.length() ? name.length() : max_size);
-			}
+				max_size = std::max(max_size, (uint32_t)name.length());
 
-			menu.menu_size = {(10.f * static_cast<float>(max_size)) + 10.f, 2 * (10.f * static_cast<float>(menu.options.size())) + 10.f};
+			menu.menu_size = {(12.f * static_cast<float>(max_size)) + 20.f, 25.f * static_cast<float>(menu.options.size()) + 10.f};
 		}
 	}
 
@@ -237,7 +208,7 @@ namespace big
 
 	void context_menu_service::disable_control_action_loop()
 	{
-		if (g_context_menu_service->enabled)
+		if (g_context_menu_service && g_context_menu_service->enabled)
 		{
 			for (const auto& control : controls)
 				PAD::DISABLE_CONTROL_ACTION(0, static_cast<int>(control), true);
@@ -258,7 +229,6 @@ namespace big
 			if (!g.context_menu.enabled)
 			{
 				g_context_menu_service->enabled = false;
-
 				script::get_current()->yield();
 				continue;
 			}
@@ -266,22 +236,17 @@ namespace big
 			if (PAD::IS_USING_KEYBOARD_AND_MOUSE(0))
 			{
 				if (PAD::IS_DISABLED_CONTROL_JUST_RELEASED(0, (int)ControllerInputs::INPUT_VEH_DUCK))
-				{
 					g_context_menu_service->enabled = !g_context_menu_service->enabled;
-				}
 			}
 			else
 			{
 				if (PAD::IS_DISABLED_CONTROL_PRESSED(0, (int)ControllerInputs::INPUT_AIM) && PAD::IS_DISABLED_CONTROL_JUST_RELEASED(0, (int)ControllerInputs::INPUT_FRONTEND_Y))
-				{
 					g_context_menu_service->enabled = !g_context_menu_service->enabled;
-				}
 			}
 
 			if (g_context_menu_service->enabled)
 			{
 				HUD::SHOW_HUD_COMPONENT_THIS_FRAME(static_cast<int>(HudComponents::RETICLE));
-
 				g_context_menu_service->get_entity_closest_to_screen_center();
 
 				const auto cm = g_context_menu_service->get_context_menu();
@@ -300,21 +265,18 @@ namespace big
 				PAD::DISABLE_CONTROL_ACTION(0, static_cast<int>(execute_key), true);
 
 				if (PAD::IS_DISABLED_CONTROL_JUST_PRESSED(0, (int)next_key))
-					cm->current_option = cm->options.size() <= cm->current_option + 1 ? 0 : cm->current_option + 1;
+					cm->current_option = (cm->current_option + 1) % cm->options.size();
 				if (PAD::IS_DISABLED_CONTROL_JUST_PRESSED(0, (int)prev_key))
-					cm->current_option = 0 > cm->current_option - 1 ? static_cast<int>(cm->options.size()) - 1 : cm->current_option - 1;
+					cm->current_option = (cm->current_option - 1 + (int)cm->options.size()) % cm->options.size();
 
 				if (PAD::IS_DISABLED_CONTROL_JUST_PRESSED(0, (int)execute_key))
 				{
-					if (!g_context_menu_service->m_pointer)
+					if (g_context_menu_service->m_handle && ENTITY::DOES_ENTITY_EXIST(g_context_menu_service->m_handle))
 					{
-						script::get_current()->yield();
-						continue;
+						g_fiber_pool->queue_job([cm] {
+							cm->options.at(cm->current_option).command();
+						});
 					}
-
-					g_fiber_pool->queue_job([cm] {
-						cm->options.at(cm->current_option).command();
-					});
 				}
 			}
 

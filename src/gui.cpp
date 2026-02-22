@@ -107,25 +107,22 @@ namespace big
 
 	void gui::dx_init()
 	{
-		static auto bgColor     = ImVec4(0.09f, 0.094f, 0.129f, .9f);
-		static auto primary     = ImVec4(0.172f, 0.380f, 0.909f, 1.f);
-		static auto secondary   = ImVec4(0.443f, 0.654f, 0.819f, 1.f);
-		static auto whiteBroken = ImVec4(0.792f, 0.784f, 0.827f, 1.f);
-
 		auto& style             = ImGui::GetStyle();
 		style.WindowPadding     = ImVec2(15, 15);
-		style.WindowRounding    = 10.f;
-		style.WindowBorderSize  = 0.f;
+		style.WindowRounding    = 0.f; // 直角
+		style.WindowBorderSize  = 1.f; // 增加轻微边框以提升层次感
 		style.FramePadding      = ImVec2(5, 5);
-		style.FrameRounding     = 4.0f;
+		style.FrameRounding     = 0.0f; // 直角
 		style.ItemSpacing       = ImVec2(12, 8);
 		style.ItemInnerSpacing  = ImVec2(8, 6);
 		style.IndentSpacing     = 25.0f;
 		style.ScrollbarSize     = 15.0f;
-		style.ScrollbarRounding = 9.0f;
+		style.ScrollbarRounding = 0.0f; // 直角
 		style.GrabMinSize       = 5.0f;
-		style.GrabRounding      = 3.0f;
-		style.ChildRounding     = 4.0f;
+		style.GrabRounding      = 0.0f; // 直角
+		style.ChildRounding     = 0.0f; // 直角
+		style.PopupRounding     = 0.0f; // 直角
+		style.TabRounding       = 0.0f; // 直角
 
 		auto& colors                          = style.Colors;
 		colors[ImGuiCol_Text]                 = ImGui::ColorConvertU32ToFloat4(g.window.text_color);
