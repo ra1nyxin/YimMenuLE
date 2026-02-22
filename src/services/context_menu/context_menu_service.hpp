@@ -8,6 +8,8 @@
 #include "util/entity.hpp"
 #include "util/ped.hpp"
 #include "util/teleport.hpp"
+#include "util/vehicle.hpp"
+#include "util/toxic.hpp"
 
 namespace big
 {
@@ -60,17 +62,7 @@ namespace big
 		s_context_menu vehicle_menu{ContextEntityType::VEHICLE,
 		    0,
 		    {},
-		    {{"摧毁引擎",
-		         [this] {
-			         if (entity::take_control_of(m_handle))
-			         {
-				         VEHICLE::SET_VEHICLE_ENGINE_HEALTH(m_handle, 0.f);
-				         VEHICLE::SET_VEHICLE_ENGINE_ON(m_handle, false, true, false);
-			         }
-			         else
-				         g_notification_service.push_warning("TOXIC"_T.data(), "VEHICLE_FAILED_CONTROL"_T.data());
-		         }},
-		        {"修复载具",
+		    {{"修复载具",
 		            [this] {
 			            if (entity::take_control_of(m_handle))
 			            {
@@ -79,8 +71,6 @@ namespace big
 				            VEHICLE::SET_VEHICLE_DEFORMATION_FIXED(m_handle);
 				            VEHICLE::SET_VEHICLE_DIRT_LEVEL(m_handle, 0.f);
 			            }
-			            else
-				            g_notification_service.push_warning("WARNING"_T.data(), "VEHICLE_FAILED_CONTROL"_T.data());
 		            }},
 				{"设为无敌",
 				    [this] {
@@ -89,62 +79,50 @@ namespace big
 				            ENTITY::SET_ENTITY_INVINCIBLE(m_handle, true);
 				            ENTITY::SET_ENTITY_PROOFS(m_handle, true, true, true, true, true, true, true, true);
 				        }
-				        else
-				            g_notification_service.push_warning("WARNING"_T.data(), "VEHICLE_FAILED_CONTROL"_T.data());
 				    }},
-				{"翻转载具",
+				{"性能改装",
 				    [this] {
 				        if (entity::take_control_of(m_handle))
 				        {
-				            Vector3 rot = ENTITY::GET_ENTITY_ROTATION(m_handle, 2);
-				            float new_roll = (std::abs(rot.y) > 90.0f) ? 0.0f : 180.0f;				            
-				            ENTITY::SET_ENTITY_ROTATION(m_handle, rot.x, new_roll, rot.z, 2, true);
+				            VEHICLE::SET_VEHICLE_MOD_KIT(m_handle, 0);
+				            for (int i = 11; i <= 13; i++)
+					            VEHICLE::SET_VEHICLE_MOD(m_handle, i, VEHICLE::GET_NUM_VEHICLE_MODS(m_handle, i) - 1, false);
+				            VEHICLE::SET_VEHICLE_MOD(m_handle, 15, VEHICLE::GET_NUM_VEHICLE_MODS(m_handle, 15) - 1, false);
+				            VEHICLE::SET_VEHICLE_MOD(m_handle, 18, 0, false);
 				        }
-				        else
-				            g_notification_service.push_warning("WARNING"_T.data(), "VEHICLE_FAILED_CONTROL"_T.data());
 				    }},
+				{"摧毁引擎",
+		         [this] {
+			         if (entity::take_control_of(m_handle))
+			         {
+				         VEHICLE::SET_VEHICLE_ENGINE_HEALTH(m_handle, -4000.f);
+				         VEHICLE::SET_VEHICLE_ENGINE_ON(m_handle, false, true, false);
+			         }
+		         }},
 		        {"爆胎",
 		            [this] {
 			            if (entity::take_control_of(m_handle))
 			            {
 				            VEHICLE::SET_VEHICLE_TYRES_CAN_BURST(m_handle, true);
 				            for (int i = 0; i < 8; i++)
-				            {
 					            VEHICLE::SET_VEHICLE_TYRE_BURST(m_handle, i, true, 1000.0);
-				            }
 			            }
-			            else
-				            g_notification_service.push_warning("TOXIC"_T.data(), "VEHICLE_FAILED_CONTROL"_T.data());
-		            }},
-		        {"强制停下",
-		            [this] {
-			            if (entity::take_control_of(m_handle))
-			            {
-				            VEHICLE::BRING_VEHICLE_TO_HALT(m_handle, 1, 5, true);
-			            }
-			            else
-				            g_notification_service.push_warning("TOXIC"_T.data(), "VEHICLE_FAILED_CONTROL"_T.data());
-		            }},
-		        {"复制载具",
-		            [this] {
-			            Vehicle v = persist_car_service::clone_ped_car(VEHICLE::GET_PED_IN_VEHICLE_SEAT(m_handle, -1, 0), m_handle);
-			            script::get_current()->yield();
-			            PED::SET_PED_INTO_VEHICLE(PLAYER::PLAYER_PED_ID(), v, -1);
-		            }},
-		        {"极速冲刺",
-		            [this] {
-			            if (entity::take_control_of(m_handle))
-				            VEHICLE::SET_VEHICLE_FORWARD_SPEED(m_handle, 79);
-			            else
-				            g_notification_service.push_warning("TOXIC"_T.data(), "VEHICLE_FAILED_CONTROL"_T.data());
 		            }},
 		        {"弹射起飞",
 		            [this] {
 			            if (entity::take_control_of(m_handle))
-				            ENTITY::APPLY_FORCE_TO_ENTITY(m_handle, 1, 0.f, 0.f, 50000.f, 0.f, 0.f, 0.f, 0, 0, 1, 1, 0, 1);
-			            else
-				            g_notification_service.push_warning("TOXIC"_T.data(), "VEHICLE_FAILED_CONTROL"_T.data());
+				            ENTITY::APPLY_FORCE_TO_ENTITY(m_handle, 1, 0.f, 0.f, 100.f, 0.f, 0.f, 0.f, 0, 0, 1, 1, 0, 1);
 		            }},
+				{"重力异常",
+					[this] {
+						if (entity::take_control_of(m_handle))
+							VEHICLE::SET_VEHICLE_GRAVITY(m_handle, false);
+					}},
+				{"锁定车门",
+					[this] {
+						if (entity::take_control_of(m_handle))
+							VEHICLE::SET_VEHICLE_DOORS_LOCKED(m_handle, 4);
+					}},
 		        {"传到导航点",
 		            [this] {
 			            Blip waypoint = HUD::GET_FIRST_BLIP_INFO_ID(8);
@@ -156,22 +134,19 @@ namespace big
 					            ENTITY::SET_ENTITY_COORDS(m_handle, coords.x, coords.y, coords.z, false, false, false, false);
 					            VEHICLE::SET_VEHICLE_ON_GROUND_PROPERLY(m_handle, 5.f);
 				            }
-				            else
-					            g_notification_service.push_warning("TOXIC"_T.data(), "VEHICLE_FAILED_CONTROL"_T.data());
 			            }
-			            else
-				            g_notification_service.push_warning("WARNING"_T.data(), "未设置导航点");
 		            }},
 		        {"踢出驾驶员",
 		            [this] {
-			            if (ped::get_player_from_ped(VEHICLE::GET_PED_IN_VEHICLE_SEAT(m_handle, -1, 0)) != NULL)
-			            {
-				            static player_command* command = player_command::get("vehkick"_J);
-				            command->call(ped::get_player_from_ped(VEHICLE::GET_PED_IN_VEHICLE_SEAT(m_handle, -1, 0)), {});
-			            }
-
-			            TASK::CLEAR_PED_TASKS_IMMEDIATELY(VEHICLE::GET_PED_IN_VEHICLE_SEAT(m_handle, -1, 0));
-			            TASK::CLEAR_PED_TASKS_IMMEDIATELY(m_handle);
+						Ped driver = VEHICLE::GET_PED_IN_VEHICLE_SEAT(m_handle, -1, 0);
+						if (ENTITY::DOES_ENTITY_EXIST(driver)) {
+							if (ped::get_player_from_ped(driver) != NULL)
+							{
+								static player_command* command = player_command::get("vehkick"_J);
+								command->call(ped::get_player_from_ped(driver), {});
+							}
+							TASK::CLEAR_PED_TASKS_IMMEDIATELY(driver);
+						}
 		            }},
 		        {"坐进载具", [this] {
 			         teleport::into_vehicle(m_handle);
@@ -180,11 +155,21 @@ namespace big
 		s_context_menu ped_menu{ContextEntityType::PED,
 		    0,
 		    {},
-		    {{"缴械",
-		         [this] {
-			         for (auto& [_, weapon] : g_gta_data_service.weapons())
-				         WEAPON::REMOVE_WEAPON_FROM_PED(m_handle, weapon.m_hash);
+		    {{"招募保镖", [this] {
+			         TASK::CLEAR_PED_TASKS(m_handle);
+			         PED::SET_PED_AS_GROUP_MEMBER(m_handle, PED::GET_PED_GROUP_INDEX(self::ped));
+			         PED::SET_PED_RELATIONSHIP_GROUP_HASH(m_handle, PED::GET_PED_RELATIONSHIP_GROUP_HASH(self::ped));
+			         PED::SET_PED_NEVER_LEAVES_GROUP(m_handle, true);
+			         PED::SET_PED_COMBAT_ABILITY(m_handle, 2);
+			         WEAPON::GIVE_WEAPON_TO_PED(m_handle, "weapon_specialcarbine"_J, 9999, false, true);
 		         }},
+				{"意志控制", [this] {
+					if (entity::take_control_of(m_handle)) {
+						TASK::CLEAR_PED_TASKS_IMMEDIATELY(m_handle);
+						TASK::TASK_COMBAT_HATED_TARGETS_AROUND_PED(m_handle, 500.f, 0);
+						PED::SET_PED_RELATIONSHIP_GROUP_HASH(m_handle, "HATES_PLAYER"_J);
+					}
+				}},
 		        {"杀死",
 		            [this] {
 			            ped::kill_ped(m_handle);
@@ -195,36 +180,43 @@ namespace big
 					}},
 		        {"布娃娃模式",
 		            [this] {
-			            PED::SET_PED_TO_RAGDOLL(m_handle, 2000, 2000, 0, 0, 0, 0);
+			            PED::SET_PED_TO_RAGDOLL(m_handle, 5000, 5000, 0, 0, 0, 0);
 		            }},
+				{"焚化", [this] {
+					if (entity::take_control_of(m_handle)) {
+						FIRE::START_ENTITY_FIRE(m_handle);
+					}
+				}},
 		        {"播放动画",
 		            [this] {
-			            // TODO: maybe inform the user of this behavior
 			            if (STREAMING::DOES_ANIM_DICT_EXIST(g_ped_animation_service.current_animation.dict.data()))
 				            g_ped_animation_service.play_saved_ped_animation(g_ped_animation_service.current_animation, m_handle);
 			            else
 				            ped::ped_play_animation(m_handle, "mini@strip_club@private_dance@part1", "priv_dance_p1", 3.5f, -4.0f, -1, 1);
-		            }},
-		        {"招募保镖", [this] {
-			         TASK::CLEAR_PED_TASKS(m_handle);
-			         PED::SET_PED_AS_GROUP_MEMBER(m_handle, PED::GET_PED_GROUP_INDEX(self::ped));
-			         PED::SET_PED_RELATIONSHIP_GROUP_HASH(m_handle, PED::GET_PED_RELATIONSHIP_GROUP_HASH(self::ped));
-			         PED::SET_PED_NEVER_LEAVES_GROUP(m_handle, true);
-			         PED::SET_CAN_ATTACK_FRIENDLY(m_handle, 0, 1);
-			         PED::SET_PED_COMBAT_ABILITY(m_handle, 2);
-			         PED::SET_PED_CAN_TELEPORT_TO_GROUP_LEADER(m_handle, PED::GET_PED_GROUP_INDEX(self::ped), true);
-			         PED::SET_PED_FLEE_ATTRIBUTES(m_handle, 512 | 1024 | 2048 | 16384 | 131072 | 262144, true);
-			         PED::SET_PED_COMBAT_ATTRIBUTES(m_handle, 5, true);
-			         PED::SET_PED_COMBAT_ATTRIBUTES(m_handle, 13, true);
-			         PED::SET_PED_CONFIG_FLAG(m_handle, 394, true);
-			         PED::SET_PED_CONFIG_FLAG(m_handle, 400, true);
-			         PED::SET_PED_CONFIG_FLAG(m_handle, 134, true);
-			         WEAPON::GIVE_WEAPON_TO_PED(m_handle, "weapon_microsmg"_J, 9999, false, false);
-			         WEAPON::GIVE_WEAPON_TO_PED(m_handle, "weapon_carbinerifle"_J, 9999, false, true);
-			         TASK::TASK_COMBAT_HATED_TARGETS_AROUND_PED(self::ped, 100, 67108864);
-		         }}}};
+		            }}}};
 
-		s_context_menu object_menu{ContextEntityType::OBJECT, 0, {}, {}};
+		s_context_menu object_menu{ContextEntityType::OBJECT, 0, {}, {
+			{"锁定位置", [this] {
+				if (entity::take_control_of(m_handle))
+					ENTITY::FREEZE_ENTITY_POSITION(m_handle, true);
+			}},
+			{"解除锁定", [this] {
+				if (entity::take_control_of(m_handle))
+					ENTITY::FREEZE_ENTITY_POSITION(m_handle, false);
+			}},
+			{"隐身", [this] {
+				if (entity::take_control_of(m_handle))
+					ENTITY::SET_ENTITY_VISIBLE(m_handle, false, false);
+			}},
+			{"显示", [this] {
+				if (entity::take_control_of(m_handle))
+					ENTITY::SET_ENTITY_VISIBLE(m_handle, true, false);
+			}},
+			{"标记持久化", [this] {
+				if (entity::take_control_of(m_handle))
+					ENTITY::SET_ENTITY_AS_MISSION_ENTITY(m_handle, true, true);
+			}}
+		}};
 
 		s_context_menu player_menu{ContextEntityType::PLAYER,
 		    0,
@@ -240,6 +232,13 @@ namespace big
 							PED::ADD_ARMOUR_TO_PED(m_handle, 100);
 						}
 					}},
+				{"给予武器", [this] {
+					auto player = ped::get_player_from_ped(m_handle);
+					if (player) {
+						static player_command* command = player_command::get("giveallweaps"_J);
+						command->call(player, {});
+					}
+				}},
 		        {"偷取服装",
 		            [this] {
 			            ped::steal_outfit(m_handle);
@@ -248,9 +247,8 @@ namespace big
 		            [this] {
 			            static player_command* command = player_command::get("smartkick"_J);
 			            command->call(ped::get_player_from_ped(m_handle), {});
-			            script::get_current()->yield(500ms);
 		            }},
-		        {"缴械",
+		        {"强制缴械",
 		            [this] {
 			            static player_command* command = player_command::get("remweaps"_J);
 			            command->call(ped::get_player_from_ped(m_handle), {});
@@ -266,54 +264,26 @@ namespace big
 		    {{"复制 HASH",
 		         [this] {
 			         ImGui::SetClipboardText(std::format("0x{:08X}", (rage::joaat_t)m_pointer->m_model_info->m_hash).c_str());
-			         g_notification_service.push("上下文菜单",
-			             std::format("已复制 Hash 0x{:08X}", (rage::joaat_t)m_pointer->m_model_info->m_hash).c_str());
 		         }},
 		        {"爆炸",
 		            [this] {
 			            rage::fvector3 pos = *m_pointer->m_navigation->get_position();
 			            FIRE::ADD_EXPLOSION(pos.x, pos.y, pos.z, 1, 1000, 1, 0, 1, 0);
 		            }},
-		        {"传送到此处",
-		            [this] {
-			            rage::fvector3 pos = *m_pointer->m_navigation->get_position();
-			            teleport::to_coords({pos.x, pos.y, pos.z});
-		            }},
-		        {"传送到其上方",
-		            [this] {
-			            teleport::tp_on_top(m_handle, true);
-		            }},
 		        {"拉到身边",
 		            [this] {
 			            rage::fvector3 pos = *g_local_player->m_navigation->get_position();
-
 			            if (PED::IS_PED_A_PLAYER(m_handle))
 			            {
 				            if (auto plyr = g_player_service->get_by_id(NETWORK::NETWORK_GET_PLAYER_INDEX_FROM_PED(m_handle)))
-				            {
 					            teleport::teleport_player_to_coords(plyr, {pos.x, pos.y, pos.z});
-				            }
 			            }
-			            else
-			            {
-				            if (entity::take_control_of(m_handle))
-				            {
-					            ENTITY::SET_ENTITY_COORDS(m_handle, pos.x, pos.y, pos.z, false, false, false, false);
-				            }
-			            }
-		            }},
-		        {"点燃",
-		            [this] {
-			            Vector3 pos = ENTITY::GET_ENTITY_COORDS(m_handle, TRUE);
-			            FIRE::START_ENTITY_FIRE(m_handle);
-			            FIRE::START_SCRIPT_FIRE(pos.x, pos.y, pos.z, 25, TRUE);
-			            FIRE::ADD_EXPLOSION(pos.x, pos.y, pos.z, eExplosionTag::MOLOTOV, 1, false, false, 0, false);
+			            else if (entity::take_control_of(m_handle))
+				            ENTITY::SET_ENTITY_COORDS(m_handle, pos.x, pos.y, pos.z, false, false, false, false);
 		            }},
 		        {"删除", [this] {
 			         if (entity::take_control_of(m_handle))
-			         {
 				         entity::delete_entity(m_handle);
-			         }
 		         }}}};
 		std::unordered_map<ContextEntityType, s_context_menu> options = {{ContextEntityType::VEHICLE, vehicle_menu}, {ContextEntityType::PLAYER, player_menu}, {ContextEntityType::PED, ped_menu}, {ContextEntityType::SHARED, shared_menu}, {ContextEntityType::OBJECT, object_menu}};
 	};
