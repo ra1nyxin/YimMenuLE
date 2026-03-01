@@ -10,277 +10,277 @@
 
 namespace big
 {
-	context_menu_service::context_menu_service()
-	{
-		g_context_menu_service = this;
-		load_shared();
-	}
+    context_menu_service::context_menu_service()
+    {
+        g_context_menu_service = this;
+        load_shared();
+    }
 
-	context_menu_service::~context_menu_service()
-	{
-		g_context_menu_service = nullptr;
-	}
+    context_menu_service::~context_menu_service()
+    {
+        g_context_menu_service = nullptr;
+    }
 
-	void context_menu_service::fill_model_bounding_box_screen_space()
-	{
-		Vector3 forward, right, up, pos;
-		ENTITY::GET_ENTITY_MATRIX(m_handle, &forward, &right, &up, &pos);
+    void context_menu_service::fill_model_bounding_box_screen_space()
+    {
+        if (!m_pointer || !m_pointer->m_navigation)
+            return;
 
-		const auto hash = ENTITY::GET_ENTITY_MODEL(m_handle);
-		Vector3 min, max;
-		MISC::GET_MODEL_DIMENSIONS(hash, &min, &max);
-		const auto dimensions = (max - min) * 0.5f;
+        Vector3 forward, right, up, pos;
+        ENTITY::GET_ENTITY_MATRIX(m_handle, &forward, &right, &up, &pos);
 
-		if (!m_pointer || !m_pointer->m_navigation)
-			return;
-		
-		const auto position = *m_pointer->m_navigation->get_position();
+        const auto hash = ENTITY::GET_ENTITY_MODEL(m_handle);
+        Vector3 min, max;
+        MISC::GET_MODEL_DIMENSIONS(hash, &min, &max);
+        const auto dimensions = (max - min) * 0.5f;
+        const auto position = *m_pointer->m_navigation->get_position();
 
-		rage::fvector3 front_upper_right, back_lower_left;
-		front_upper_right.x = position.x + dimensions.y * forward.x + dimensions.x * right.x + dimensions.z * up.x;
-		front_upper_right.y = position.y + dimensions.y * forward.y + dimensions.x * right.y + dimensions.z * up.y;
-		front_upper_right.z = position.z + dimensions.y * forward.z + dimensions.x * right.z + dimensions.z * up.z;
+        rage::fvector3 front_upper_right, back_lower_left;
+        front_upper_right.x = position.x + dimensions.y * forward.x + dimensions.x * right.x + dimensions.z * up.x;
+        front_upper_right.y = position.y + dimensions.y * forward.y + dimensions.x * right.y + dimensions.z * up.y;
+        front_upper_right.z = position.z + dimensions.y * forward.z + dimensions.x * right.z + dimensions.z * up.z;
+        back_lower_left.x = position.x - dimensions.y * forward.x - dimensions.x * right.x - dimensions.z * up.x;
+        back_lower_left.y = position.y - dimensions.y * forward.y - dimensions.x * right.y - dimensions.z * up.y;
+        back_lower_left.z = position.z - dimensions.y * forward.z - dimensions.x * right.z - dimensions.z * up.z;
 
-		back_lower_left.x = position.x - dimensions.y * forward.x - dimensions.x * right.x - dimensions.z * up.x;
-		back_lower_left.y = position.y - dimensions.y * forward.y - dimensions.x * right.y - dimensions.z * up.y;
-		back_lower_left.z = position.z - dimensions.y * forward.z - dimensions.x * right.z - dimensions.z * up.z;
+        rage::fvector3 edge1 = back_lower_left;
+        rage::fvector3 edge2, edge3, edge4;
+        rage::fvector3 edge5 = front_upper_right;
+        rage::fvector3 edge6, edge7, edge8;
 
-		rage::fvector3 edge1 = back_lower_left;
-		rage::fvector3 edge2, edge3, edge4;
-		rage::fvector3 edge5 = front_upper_right;
-		rage::fvector3 edge6, edge7, edge8;
+        edge2.x = edge1.x + 2 * dimensions.y * forward.x;
+        edge2.y = edge1.y + 2 * dimensions.y * forward.y;
+        edge2.z = edge1.z + 2 * dimensions.y * forward.z;
+        edge3.x = edge2.x + 2 * dimensions.z * up.x;
+        edge3.y = edge2.y + 2 * dimensions.z * up.y;
+        edge3.z = edge2.z + 2 * dimensions.z * up.z;
+        edge4.x = edge1.x + 2 * dimensions.z * up.x;
+        edge4.y = edge1.y + 2 * dimensions.z * up.y;
+        edge4.z = edge1.z + 2 * dimensions.z * up.z;
+        edge6.x = edge5.x - 2 * dimensions.y * forward.x;
+        edge6.y = edge5.y - 2 * dimensions.y * forward.y;
+        edge6.z = edge5.z - 2 * dimensions.y * forward.z;
+        edge7.x = edge6.x - 2 * dimensions.z * up.x;
+        edge7.y = edge6.y - 2 * dimensions.z * up.y;
+        edge7.z = edge6.z - 2 * dimensions.z * up.z;
+        edge8.x = edge5.x - 2 * dimensions.z * up.x;
+        edge8.y = edge5.y - 2 * dimensions.z * up.y;
+        edge8.z = edge5.z - 2 * dimensions.z * up.z;
 
-		edge2.x = edge1.x + 2 * dimensions.y * forward.x;
-		edge2.y = edge1.y + 2 * dimensions.y * forward.y;
-		edge2.z = edge1.z + 2 * dimensions.y * forward.z;
+        auto any_fail = false;
+        static auto imgui_world_to_screen = [&any_fail](rage::fvector3& world_input, ImVec2& screen_result) {
+            if (any_fail) return;
 
-		edge3.x = edge2.x + 2 * dimensions.z * up.x;
-		edge3.y = edge2.y + 2 * dimensions.z * up.y;
-		edge3.z = edge2.z + 2 * dimensions.z * up.z;
+            const auto success = GRAPHICS::GET_SCREEN_COORD_FROM_WORLD_COORD(world_input.x,
+                world_input.y,
+                world_input.z,
+                &screen_result.x,
+                &screen_result.y);
+            if (success)
+            {
+                screen_result.x = static_cast<float>(*g_pointers->m_gta.m_resolution_x) * screen_result.x;
+                screen_result.y = static_cast<float>(*g_pointers->m_gta.m_resolution_y) * screen_result.y;
+            }
+            else
+                any_fail = true;
+        };
 
-		edge4.x = edge1.x + 2 * dimensions.z * up.x;
-		edge4.y = edge1.y + 2 * dimensions.z * up.y;
-		edge4.z = edge1.z + 2 * dimensions.z * up.z;
+        auto& box = m_model_bounding_box_screen_space;
+        imgui_world_to_screen(edge1, box.edge1);
+        imgui_world_to_screen(edge2, box.edge2);
+        imgui_world_to_screen(edge3, box.edge3);
+        imgui_world_to_screen(edge4, box.edge4);
+        imgui_world_to_screen(edge5, box.edge5);
+        imgui_world_to_screen(edge6, box.edge6);
+        imgui_world_to_screen(edge7, box.edge7);
+        imgui_world_to_screen(edge8, box.edge8);
 
-		edge6.x = edge5.x - 2 * dimensions.y * forward.x;
-		edge6.y = edge5.y - 2 * dimensions.y * forward.y;
-		edge6.z = edge5.z - 2 * dimensions.y * forward.z;
+        if (any_fail) box = {};
+    }
 
-		edge7.x = edge6.x - 2 * dimensions.z * up.x;
-		edge7.y = edge6.y - 2 * dimensions.z * up.y;
-		edge7.z = edge6.z - 2 * dimensions.z * up.z;
+    double context_menu_service::distance_to_middle_of_screen(const rage::fvector2& screen_pos)
+    {
+        return std::abs(screen_pos.x - 0.5) + std::abs(screen_pos.y - 0.5);
+    }
 
-		edge8.x = edge5.x - 2 * dimensions.z * up.x;
-		edge8.y = edge5.y - 2 * dimensions.z * up.y;
-		edge8.z = edge5.z - 2 * dimensions.z * up.z;
+    s_context_menu* context_menu_service::get_context_menu()
+    {
+        if (m_pointer && m_pointer->m_model_info)
+        {
+            switch (m_pointer->m_model_info->get_model_type())
+            {
+            case eModelType::Object:
+            {
+                if (!misc::has_bits_set(&g.context_menu.allowed_entity_types, static_cast<uint8_t>(ContextEntityType::OBJECT))) break;
+                return &options.at(ContextEntityType::OBJECT);
+            }
+            case eModelType::Ped:
+            {
+                if (const auto ped = reinterpret_cast<CPed*>(m_pointer); ped)
+                {
+                    if (ped->m_ped_task_flag & static_cast<uint8_t>(ePedTask::TASK_DRIVING) && ped->m_vehicle)
+                    {
+                        if (!misc::has_bits_set(&g.context_menu.allowed_entity_types, static_cast<uint8_t>(ContextEntityType::VEHICLE))) break;
+                        m_pointer = ped->m_vehicle;
+                        m_handle = g_pointers->m_gta.m_ptr_to_handle(m_pointer);
+                        return &options.at(ContextEntityType::VEHICLE);
+                    }
+                    if (ped->m_player_info)
+                    {
+                        if (!misc::has_bits_set(&g.context_menu.allowed_entity_types, static_cast<uint8_t>(ContextEntityType::PLAYER))) break;
+                        return &options.at(ContextEntityType::PLAYER);
+                    }
+                }
+                if (!misc::has_bits_set(&g.context_menu.allowed_entity_types, static_cast<uint8_t>(ContextEntityType::PED))) break;
+                return &options.at(ContextEntityType::PED);
+            }
+            case eModelType::Vehicle:
+            {
+                if (!misc::has_bits_set(&g.context_menu.allowed_entity_types, static_cast<uint8_t>(ContextEntityType::VEHICLE))) break;
+                return &options.at(ContextEntityType::VEHICLE);
+            }
+            default: break;
+            }
+        }
+        return nullptr;
+    }
 
-		auto any_fail                     = false;
-		static auto imgui_world_to_screen = [&any_fail](rage::fvector3& world_input, ImVec2& screen_result) {
-			if (any_fail) return;
+    void context_menu_service::get_entity_closest_to_screen_center()
+    {
+        m_handle = entity::get_entity_closest_to_middle_of_screen(&m_pointer);
+        if (ENTITY::DOES_ENTITY_EXIST(m_handle) && m_pointer)
+            fill_model_bounding_box_screen_space();
+    }
 
-			const auto success = GRAPHICS::GET_SCREEN_COORD_FROM_WORLD_COORD(world_input.x,
-			    world_input.y,
-			    world_input.z,
-			    &screen_result.x,
-			    &screen_result.y);
-			if (success)
-			{
-				screen_result.x = static_cast<float>(*g_pointers->m_gta.m_resolution_x) * screen_result.x;
-				screen_result.y = static_cast<float>(*g_pointers->m_gta.m_resolution_y) * screen_result.y;
-			}
-			else
-				any_fail = true;
-		};
+    void context_menu_service::load_shared()
+    {
+        auto& shared_opts = options.at(ContextEntityType::SHARED).options;
 
-		auto& box = m_model_bounding_box_screen_space;
-		imgui_world_to_screen(edge1, box.edge1);
-		imgui_world_to_screen(edge2, box.edge2);
-		imgui_world_to_screen(edge3, box.edge3);
-		imgui_world_to_screen(edge4, box.edge4);
-		imgui_world_to_screen(edge5, box.edge5);
-		imgui_world_to_screen(edge6, box.edge6);
-		imgui_world_to_screen(edge7, box.edge7);
-		imgui_world_to_screen(edge8, box.edge8);
+        for (auto& [type, menu] : options)
+        {
+            if (type == ContextEntityType::SHARED)
+                continue;
 
-		if (any_fail) box = {};
-	}
+            for (const auto& shared_opt : shared_opts)
+            {
+                bool exists = false;
+                for (const auto& existing_opt : menu.options)
+                {
+                    if (existing_opt.name == shared_opt.name)
+                    {
+                        exists = true;
+                        break;
+                    }
+                }
+                if (!exists)
+                    menu.options.push_back(shared_opt);
+            }
 
-	double context_menu_service::distance_to_middle_of_screen(const rage::fvector2& screen_pos)
-	{
-		double cum_dist{};
-		cum_dist += std::abs(screen_pos.x - 0.5);
-		cum_dist += std::abs(screen_pos.y - 0.5);
-		return cum_dist;
-	}
+            float max_width = 120.f;
+            for (auto& opt : menu.options)
+            {
+                float cmd_width = static_cast<float>(opt.name.length()) * 8.5f + 30.f;
+                if (cmd_width > max_width) max_width = cmd_width;
+            }
 
-	s_context_menu* context_menu_service::get_context_menu()
-	{
-		if (m_pointer && m_pointer->m_model_info)
-		{
-			switch (m_pointer->m_model_info->get_model_type())
-			{
-			case eModelType::Object:
-			{
-				if (!misc::has_bits_set(&g.context_menu.allowed_entity_types, static_cast<uint8_t>(ContextEntityType::OBJECT))) break;
-				return &options.at(ContextEntityType::OBJECT);
-			}
-			case eModelType::Ped:
-			{
-				if (const auto ped = reinterpret_cast<CPed*>(m_pointer); ped)
-				{
-					if (ped->m_ped_task_flag & static_cast<uint8_t>(ePedTask::TASK_DRIVING) && ped->m_vehicle)
-					{
-						if (!misc::has_bits_set(&g.context_menu.allowed_entity_types, static_cast<uint8_t>(ContextEntityType::VEHICLE))) break;
-						m_pointer = ped->m_vehicle;
-						return &options.at(ContextEntityType::VEHICLE);
-					}
-					if (ped->m_player_info)
-					{
-						if (!misc::has_bits_set(&g.context_menu.allowed_entity_types, static_cast<uint8_t>(ContextEntityType::PLAYER))) break;
-						return &options.at(ContextEntityType::PLAYER);
-					}
-				}
-				if (!misc::has_bits_set(&g.context_menu.allowed_entity_types, static_cast<uint8_t>(ContextEntityType::PED))) break;
-				return &options.at(ContextEntityType::PED);
-			}
-			case eModelType::Vehicle:
-			{
-				if (!misc::has_bits_set(&g.context_menu.allowed_entity_types, static_cast<uint8_t>(ContextEntityType::VEHICLE))) break;
-				return &options.at(ContextEntityType::VEHICLE);
-			}
-			default: break;
-			}
-		}
-		return nullptr;
-	}
+            float total_height = static_cast<float>(menu.options.size()) * 25.f + 10.f;
+            menu.menu_size = { max_width, total_height };
+        }
+    }
 
-	void context_menu_service::get_entity_closest_to_screen_center()
-	{
-		m_handle = entity::get_entity_closest_to_middle_of_screen(&m_pointer);
-		if (ENTITY::DOES_ENTITY_EXIST(m_handle) && m_pointer)
-			fill_model_bounding_box_screen_space();
-	}
+    static const ControllerInputs controls[] = {
+        ControllerInputs::INPUT_NEXT_WEAPON,
+        ControllerInputs::INPUT_PREV_WEAPON,
+        ControllerInputs::INPUT_VEH_NEXT_RADIO,
+        ControllerInputs::INPUT_VEH_SELECT_NEXT_WEAPON,
+        ControllerInputs::INPUT_SELECT_NEXT_WEAPON,
+        ControllerInputs::INPUT_SELECT_PREV_WEAPON,
+        ControllerInputs::INPUT_ATTACK,
+        ControllerInputs::INPUT_ATTACK2,
+        ControllerInputs::INPUT_SPECIAL_ABILITY,
+        ControllerInputs::INPUT_VEH_MOUSE_CONTROL_OVERRIDE,
+        ControllerInputs::INPUT_SNIPER_ZOOM,
+    };
 
-	void context_menu_service::load_shared()
-	{
-		for (auto& [type, menu] : options)
-		{
-			if (type == ContextEntityType::SHARED)
-				continue;
+    void context_menu_service::disable_control_action_loop()
+    {
+        if (g_context_menu_service && g_context_menu_service->enabled)
+        {
+            for (const auto& control : controls)
+                PAD::DISABLE_CONTROL_ACTION(0, static_cast<int>(control), true);
+        }
+    }
 
-			// Avoid duplicate insertions if load_shared is called multiple times
-			for (const auto& shared_opt : options.at(ContextEntityType::SHARED).options)
-			{
-				bool exists = false;
-				for (const auto& existing_opt : menu.options)
-				{
-					if (existing_opt.name == shared_opt.name)
-					{
-						exists = true;
-						break;
-					}
-				}
-				if (!exists)
-					menu.options.push_back(shared_opt);
-			}
+    void context_menu_service::context_menu()
+    {
+        while (g_running)
+        {
+            if (g_gui->is_open() || HUD::IS_PAUSE_MENU_ACTIVE()
+                || (*g_pointers->m_gta.m_chat_data && (*g_pointers->m_gta.m_chat_data)->m_chat_open) || g.cmd_executor.enabled)
+            {
+                script::get_current()->yield();
+                continue;
+            }
 
-			uint32_t max_size = 0;
-			for (auto& [name, _] : menu.options)
-				max_size = std::max(max_size, (uint32_t)name.length());
+            if (!g.context_menu.enabled)
+            {
+                if (g_context_menu_service) g_context_menu_service->enabled = false;
+                script::get_current()->yield();
+                continue;
+            }
 
-			menu.menu_size = {(12.f * static_cast<float>(max_size)) + 20.f, 25.f * static_cast<float>(menu.options.size()) + 10.f};
-		}
-	}
+            if (PAD::IS_USING_KEYBOARD_AND_MOUSE(0))
+            {
+                if (PAD::IS_DISABLED_CONTROL_JUST_RELEASED(0, (int)ControllerInputs::INPUT_VEH_DUCK))
+                    g_context_menu_service->enabled = !g_context_menu_service->enabled;
+            }
+            else
+            {
+                if (PAD::IS_DISABLED_CONTROL_PRESSED(0, (int)ControllerInputs::INPUT_AIM) && PAD::IS_DISABLED_CONTROL_JUST_RELEASED(0, (int)ControllerInputs::INPUT_FRONTEND_Y))
+                    g_context_menu_service->enabled = !g_context_menu_service->enabled;
+            }
 
-	static const ControllerInputs controls[] = {
-	    ControllerInputs::INPUT_NEXT_WEAPON,
-	    ControllerInputs::INPUT_PREV_WEAPON,
-	    ControllerInputs::INPUT_VEH_NEXT_RADIO,
-	    ControllerInputs::INPUT_VEH_SELECT_NEXT_WEAPON,
-	    ControllerInputs::INPUT_SELECT_NEXT_WEAPON,
-	    ControllerInputs::INPUT_SELECT_PREV_WEAPON,
-	    ControllerInputs::INPUT_ATTACK,
-	    ControllerInputs::INPUT_ATTACK2,
-	    ControllerInputs::INPUT_SPECIAL_ABILITY,
-	    ControllerInputs::INPUT_VEH_MOUSE_CONTROL_OVERRIDE,
-	    ControllerInputs::INPUT_SNIPER_ZOOM,
-	};
+            if (g_context_menu_service->enabled)
+            {
+                HUD::SHOW_HUD_COMPONENT_THIS_FRAME(static_cast<int>(HudComponents::RETICLE));
+                g_context_menu_service->get_entity_closest_to_screen_center();
 
-	void context_menu_service::disable_control_action_loop()
-	{
-		if (g_context_menu_service && g_context_menu_service->enabled)
-		{
-			for (const auto& control : controls)
-				PAD::DISABLE_CONTROL_ACTION(0, static_cast<int>(control), true);
-		}
-	}
+                const auto cm = g_context_menu_service->get_context_menu();
+                if (cm == nullptr || cm->options.empty())
+                {
+                    script::get_current()->yield();
+                    continue;
+                }
 
-	void context_menu_service::context_menu()
-	{
-		while (g_running)
-		{
-			if (g_gui->is_open() || HUD::IS_PAUSE_MENU_ACTIVE()
-			    || (*g_pointers->m_gta.m_chat_data && (*g_pointers->m_gta.m_chat_data)->m_chat_open) || g.cmd_executor.enabled)
-			{
-				script::get_current()->yield();
-				continue;
-			}
+                ControllerInputs next_key = PAD::IS_USING_KEYBOARD_AND_MOUSE(0) ? ControllerInputs::INPUT_WEAPON_WHEEL_NEXT : ControllerInputs::INPUT_SCRIPT_PAD_DOWN;
+                ControllerInputs prev_key = PAD::IS_USING_KEYBOARD_AND_MOUSE(0) ? ControllerInputs::INPUT_WEAPON_WHEEL_PREV : ControllerInputs::INPUT_SCRIPT_PAD_UP;
+                ControllerInputs execute_key = PAD::IS_USING_KEYBOARD_AND_MOUSE(0) ? ControllerInputs::INPUT_ATTACK : ControllerInputs::INPUT_FRONTEND_ACCEPT;
 
-			if (!g.context_menu.enabled)
-			{
-				g_context_menu_service->enabled = false;
-				script::get_current()->yield();
-				continue;
-			}
+                PAD::DISABLE_CONTROL_ACTION(0, static_cast<int>(next_key), true);
+                PAD::DISABLE_CONTROL_ACTION(0, static_cast<int>(prev_key), true);
+                PAD::DISABLE_CONTROL_ACTION(0, static_cast<int>(execute_key), true);
 
-			if (PAD::IS_USING_KEYBOARD_AND_MOUSE(0))
-			{
-				if (PAD::IS_DISABLED_CONTROL_JUST_RELEASED(0, (int)ControllerInputs::INPUT_VEH_DUCK))
-					g_context_menu_service->enabled = !g_context_menu_service->enabled;
-			}
-			else
-			{
-				if (PAD::IS_DISABLED_CONTROL_PRESSED(0, (int)ControllerInputs::INPUT_AIM) && PAD::IS_DISABLED_CONTROL_JUST_RELEASED(0, (int)ControllerInputs::INPUT_FRONTEND_Y))
-					g_context_menu_service->enabled = !g_context_menu_service->enabled;
-			}
+                if (PAD::IS_DISABLED_CONTROL_JUST_PRESSED(0, (int)next_key))
+                    cm->current_option = (cm->current_option + 1) % cm->options.size();
+                if (PAD::IS_DISABLED_CONTROL_JUST_PRESSED(0, (int)prev_key))
+                    cm->current_option = (cm->current_option - 1 + (int)cm->options.size()) % cm->options.size();
 
-			if (g_context_menu_service->enabled)
-			{
-				HUD::SHOW_HUD_COMPONENT_THIS_FRAME(static_cast<int>(HudComponents::RETICLE));
-				g_context_menu_service->get_entity_closest_to_screen_center();
+                if (PAD::IS_DISABLED_CONTROL_JUST_PRESSED(0, (int)execute_key))
+                {
+                    if (ENTITY::DOES_ENTITY_EXIST(g_context_menu_service->m_handle))
+                    {
+                        int idx = cm->current_option;
+                        g_fiber_pool->queue_job([cm, idx] {
+                            if (idx < cm->options.size())
+                                cm->options.at(idx).command();
+                        });
+                        if (!PAD::IS_USING_KEYBOARD_AND_MOUSE(0))
+                            PAD::SET_PAD_SHAKE(0, 100, 150);
+                    }
+                }
+            }
 
-				const auto cm = g_context_menu_service->get_context_menu();
-				if (cm == nullptr)
-				{
-					script::get_current()->yield();
-					continue;
-				}
-
-				ControllerInputs next_key = PAD::IS_USING_KEYBOARD_AND_MOUSE(0) ? ControllerInputs::INPUT_WEAPON_WHEEL_NEXT : ControllerInputs::INPUT_SCRIPT_PAD_DOWN;
-				ControllerInputs prev_key = PAD::IS_USING_KEYBOARD_AND_MOUSE(0) ? ControllerInputs::INPUT_WEAPON_WHEEL_PREV : ControllerInputs::INPUT_SCRIPT_PAD_UP;
-				ControllerInputs execute_key = PAD::IS_USING_KEYBOARD_AND_MOUSE(0) ? ControllerInputs::INPUT_ATTACK : ControllerInputs::INPUT_FRONTEND_ACCEPT;
-
-				PAD::DISABLE_CONTROL_ACTION(0, static_cast<int>(next_key), true);
-				PAD::DISABLE_CONTROL_ACTION(0, static_cast<int>(prev_key), true);
-				PAD::DISABLE_CONTROL_ACTION(0, static_cast<int>(execute_key), true);
-
-				if (PAD::IS_DISABLED_CONTROL_JUST_PRESSED(0, (int)next_key))
-					cm->current_option = (cm->current_option + 1) % cm->options.size();
-				if (PAD::IS_DISABLED_CONTROL_JUST_PRESSED(0, (int)prev_key))
-					cm->current_option = (cm->current_option - 1 + (int)cm->options.size()) % cm->options.size();
-
-				if (PAD::IS_DISABLED_CONTROL_JUST_PRESSED(0, (int)execute_key))
-				{
-					if (g_context_menu_service->m_handle && ENTITY::DOES_ENTITY_EXIST(g_context_menu_service->m_handle))
-					{
-						g_fiber_pool->queue_job([cm] {
-							cm->options.at(cm->current_option).command();
-						});
-					}
-				}
-			}
-
-			script::get_current()->yield();
-		}
-	}
+            script::get_current()->yield();
+        }
+    }
 }
