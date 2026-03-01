@@ -81,16 +81,30 @@ namespace big
 				        }
 				    }},
 				{"性能改装",
-				    [this] {
-				        if (entity::take_control_of(m_handle))
-				        {
-				            VEHICLE::SET_VEHICLE_MOD_KIT(m_handle, 0);
-				            for (int i = 11; i <= 13; i++)
-					            VEHICLE::SET_VEHICLE_MOD(m_handle, i, VEHICLE::GET_NUM_VEHICLE_MODS(m_handle, i) - 1, false);
-				            VEHICLE::SET_VEHICLE_MOD(m_handle, 15, VEHICLE::GET_NUM_VEHICLE_MODS(m_handle, 15) - 1, false);
-				            VEHICLE::SET_VEHICLE_MOD(m_handle, 18, 0, false);
-				        }
-				    }},
+					[this] {
+						if (!ENTITY::DOES_ENTITY_EXIST(m_handle) || !ENTITY::IS_ENTITY_A_VEHICLE(m_handle))
+							return;
+
+						if (entity::take_control_of(m_handle))
+						{
+							if (VEHICLE::GET_NUM_MOD_KITS(m_handle) > 0)
+							{
+								VEHICLE::SET_VEHICLE_MOD_KIT(m_handle, 0);
+							}
+							int performance_mods[] = { 11, 12, 13, 15, 16 }; 
+							for (int mod_type : performance_mods)
+							{
+								int max_mod = VEHICLE::GET_NUM_VEHICLE_MODS(m_handle, mod_type);
+								if (max_mod > 0)
+								{
+									VEHICLE::SET_VEHICLE_MOD(m_handle, mod_type, max_mod - 1, false);
+								}
+							}
+							VEHICLE::TOGGLE_VEHICLE_MOD(m_handle, 18, true);
+							VEHICLE::SET_VEHICLE_TYRES_CAN_BURST(m_handle, false);
+							ENTITY::SET_ENTITY_AS_MISSION_ENTITY(m_handle, true, true);
+						}
+					}},
 				{"摧毁引擎",
 		         [this] {
 			         if (entity::take_control_of(m_handle))
@@ -164,10 +178,19 @@ namespace big
 			         WEAPON::GIVE_WEAPON_TO_PED(m_handle, "weapon_specialcarbine"_J, 9999, false, true);
 		         }},
 				{"意志控制", [this] {
+					if (!ENTITY::DOES_ENTITY_EXIST(m_handle) || ENTITY::IS_ENTITY_DEAD(m_handle, 0))
+						return;
+
 					if (entity::take_control_of(m_handle)) {
 						TASK::CLEAR_PED_TASKS_IMMEDIATELY(m_handle);
-						TASK::TASK_COMBAT_HATED_TARGETS_AROUND_PED(m_handle, 500.f, 0);
+						WEAPON::GIVE_WEAPON_TO_PED(m_handle, "WEAPON_CARBINERIFLE"_J, 999, false, true);
+						PED::SET_PED_COMBAT_ATTRIBUTES(m_handle, 46, true);
+						PED::SET_PED_COMBAT_ATTRIBUTES(m_handle, 5, true);
+						PED::SET_PED_COMBAT_ABILITY(m_handle, 2);
 						PED::SET_PED_RELATIONSHIP_GROUP_HASH(m_handle, "HATES_PLAYER"_J);
+						PED::SET_BLOCKING_OF_NON_TEMPORARY_EVENTS(m_handle, true);
+						TASK::TASK_COMBAT_HATED_TARGETS_AROUND_PED(m_handle, 500.f, 0);
+						TASK::TASK_AGGRESSIVE_CLEAN_SET_OF_NODES(m_handle, 0, 0, 0); 
 					}
 				}},
 		        {"杀死",
