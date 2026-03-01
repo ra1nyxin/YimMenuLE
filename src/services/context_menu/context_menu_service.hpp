@@ -169,18 +169,18 @@ namespace big
 		s_context_menu ped_menu{ContextEntityType::PED,
 		    0,
 		    {},
-		    {{"招募保镖", [this] {
-			         TASK::CLEAR_PED_TASKS(m_handle);
-			         PED::SET_PED_AS_GROUP_MEMBER(m_handle, PED::GET_PED_GROUP_INDEX(self::ped));
-			         PED::SET_PED_RELATIONSHIP_GROUP_HASH(m_handle, PED::GET_PED_RELATIONSHIP_GROUP_HASH(self::ped));
-			         PED::SET_PED_NEVER_LEAVES_GROUP(m_handle, true);
-			         PED::SET_PED_COMBAT_ABILITY(m_handle, 2);
-			         WEAPON::GIVE_WEAPON_TO_PED(m_handle, "weapon_specialcarbine"_J, 9999, false, true);
-		         }},
+			{{"招募保镖", [this] {
+					 TASK::CLEAR_PED_TASKS(m_handle);
+					 PED::SET_PED_AS_GROUP_MEMBER(m_handle, PED::GET_PED_GROUP_INDEX(self::ped));
+					 PED::SET_PED_RELATIONSHIP_GROUP_HASH(m_handle, PED::GET_PED_RELATIONSHIP_GROUP_HASH(self::ped));
+					 PED::SET_PED_NEVER_LEAVES_GROUP(m_handle, true);
+					 PED::SET_PED_COMBAT_ABILITY(m_handle, 2);
+					 WEAPON::GIVE_WEAPON_TO_PED(m_handle, "weapon_specialcarbine"_J, 9999, false, true);
+				 }},
 				{"意志控制", [this] {
 					if (!ENTITY::DOES_ENTITY_EXIST(m_handle) || ENTITY::IS_ENTITY_DEAD(m_handle, 0))
 						return;
-
+				
 					if (entity::take_control_of(m_handle)) {
 						TASK::CLEAR_PED_TASKS_IMMEDIATELY(m_handle);
 						WEAPON::GIVE_WEAPON_TO_PED(m_handle, "WEAPON_CARBINERIFLE"_J, 999, false, true);
@@ -190,7 +190,6 @@ namespace big
 						PED::SET_PED_RELATIONSHIP_GROUP_HASH(m_handle, "HATES_PLAYER"_J);
 						PED::SET_BLOCKING_OF_NON_TEMPORARY_EVENTS(m_handle, true);
 						TASK::TASK_COMBAT_HATED_TARGETS_AROUND_PED(m_handle, 500.f, 0);
-						TASK::TASK_AGGRESSIVE_CLEAN_SET_OF_NODES(m_handle, 0, 0, 0); 
 					}
 				}},
 		        {"杀死",
