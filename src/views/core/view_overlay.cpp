@@ -29,29 +29,30 @@ namespace big
 
         if (ImGui::Begin("overlay", nullptr, window_flags))
         {
-            std::array<char, 256> buffer;
-            auto format_to_ui = [&](const std::string_view fmt_str, auto&&... args) {
-                auto result = std::format_to_n(buffer.data(), buffer.size() - 1, fmt_str, std::forward<decltype(args)>(args)...);
-                *result.out = '\0';
-                ImGui::TextUnformatted(buffer.data());
-            };
-
+            std::array<char, 256> buf;
             ImGui::TextUnformatted("YimMenu");
             ImGui::Separator();
 
+            // FPS
             if (g.window.ingame_overlay.show_fps)
             {
-                format_to_ui("{:.0f} {}", ImGui::GetIO().Framerate, "VIEW_OVERLAY_FPS"_T);
+                auto res = std::format_to_n(buf.data(), buf.size() - 1, "{:.0f} {}", ImGui::GetIO().Framerate, "VIEW_OVERLAY_FPS"_T);
+                *res.out = '\0';
+                ImGui::TextUnformatted(buf.data());
             }
 
+            // Players
             if (g.window.ingame_overlay.show_players)
             {
                 if (auto* network_player_mgr = gta_util::get_network_player_mgr(); network_player_mgr != nullptr)
                 {
-                    format_to_ui("{}: {}/{}", "PLAYERS"_T, network_player_mgr->m_player_count, network_player_mgr->m_player_limit);
+                    auto res = std::format_to_n(buf.data(), buf.size() - 1, "{}: {}/{}", "PLAYERS"_T, network_player_mgr->m_player_count, network_player_mgr->m_player_limit);
+                    *res.out = '\0';
+                    ImGui::TextUnformatted(buf.data());
                 }
             }
 
+            // Indicators
             if (g.window.ingame_overlay.show_indicators)
             {
                 ImGui::Separator();
@@ -67,53 +68,72 @@ namespace big
                 components::overlay_indicator("INVISIBILITY"_T, g.self.invisibility);
             }
 
+            // Position
             if (g.window.ingame_overlay.show_position && g_local_player)
             {
                 ImGui::Separator();
                 if (auto* pos = g_local_player->get_position(); pos != nullptr)
                 {
-                    format_to_ui("{}: {:.2f}, {:.2f}, {:.2f}", "VIEW_OVERLAY_POSITION"_T, pos->x, pos->y, pos->z);
+                    auto res = std::format_to_n(buf.data(), buf.size() - 1, "{}: {:.2f}, {:.2f}, {:.2f}", "VIEW_OVERLAY_POSITION"_T, pos->x, pos->y, pos->z);
+                    *res.out = '\0';
+                    ImGui::TextUnformatted(buf.data());
                 }
             }
 
+            // Replay Interface / Pools
             if (g.window.ingame_overlay.show_replay_interface && g_pointers)
             {
                 auto& gta = g_pointers->m_gta;
-                bool any_pool_valid = (gta.m_ped_pool && *gta.m_ped_pool) || 
-                                     (gta.m_vehicle_pool && *gta.m_vehicle_pool && **gta.m_vehicle_pool) || 
-                                     (gta.m_prop_pool && *gta.m_prop_pool);
+                bool any_pool = (gta.m_ped_pool && *gta.m_ped_pool) || 
+                                (gta.m_vehicle_pool && *gta.m_vehicle_pool && **gta.m_vehicle_pool) || 
+                                (gta.m_prop_pool && *gta.m_prop_pool);
 
-                if (any_pool_valid)
+                if (any_pool)
                 {
                     ImGui::Separator();
                     if (gta.m_ped_pool && *gta.m_ped_pool)
                     {
-                        auto pool = *gta.m_ped_pool;
-                        format_to_ui("{}: {}/{}", "VIEW_OVERLAY_PED_POOL"_T, pool->get_item_count(), pool->m_size);
+                        auto p = *gta.m_ped_pool;
+                        auto res = std::format_to_n(buf.data(), buf.size() - 1, "{}: {}/{}", "VIEW_OVERLAY_PED_POOL"_T, p->get_item_count(), p->m_size);
+                        *res.out = '\0';
+                        ImGui::TextUnformatted(buf.data());
                     }
 
                     if (gta.m_vehicle_pool && *gta.m_vehicle_pool && **gta.m_vehicle_pool)
                     {
-                        auto pool = **gta.m_vehicle_pool;
-                        format_to_ui("{}: {}/{}", "VIEW_OVERLAY_VEHICLE_POOL"_T, pool->m_item_count, pool->m_size);
+                        auto p = **gta.m_vehicle_pool;
+                        auto res = std::format_to_n(buf.data(), buf.size() - 1, "{}: {}/{}", "VIEW_OVERLAY_VEHICLE_POOL"_T, p->m_item_count, p->m_size);
+                        *res.out = '\0';
+                        ImGui::TextUnformatted(buf.data());
                     }
 
                     if (gta.m_prop_pool && *gta.m_prop_pool)
                     {
-                        auto pool = *gta.m_prop_pool;
-                        format_to_ui("{}: {}/{}", "VIEW_OVERLAY_OBJECT_POOL"_T, pool->get_item_count(), pool->m_size);
+                        auto p = *gta.m_prop_pool;
+                        auto res = std::format_to_n(buf.data(), buf.size() - 1, "{}: {}/{}", "VIEW_OVERLAY_OBJECT_POOL"_T, p->get_item_count(), p->m_size);
+                        *res.out = '\0';
+                        ImGui::TextUnformatted(buf.data());
                     }
                 }
             }
 
+            // Versions
             if (g.window.ingame_overlay.show_game_versions && g_pointers)
             {
                 ImGui::Separator();
                 if (g_pointers->m_gta.m_game_version)
-                    format_to_ui("{}: {}", "VIEW_OVERLAY_GAME_VERSION"_T, g_pointers->m_gta.m_game_version);
+                {
+                    auto res = std::format_to_n(buf.data(), buf.size() - 1, "{}: {}", "VIEW_OVERLAY_GAME_VERSION"_T, g_pointers->m_gta.m_game_version);
+                    *res.out = '\0';
+                    ImGui::TextUnformatted(buf.data());
+                }
                 
                 if (g_pointers->m_gta.m_online_version)
-                    format_to_ui("{}: {}", "VIEW_OVERLAY_ONLINE_VERSION"_T, g_pointers->m_gta.m_online_version);
+                {
+                    auto res = std::format_to_n(buf.data(), buf.size() - 1, "{}: {}", "VIEW_OVERLAY_ONLINE_VERSION"_T, g_pointers->m_gta.m_online_version);
+                    *res.out = '\0';
+                    ImGui::TextUnformatted(buf.data());
+                }
             }
         }
         ImGui::End();
